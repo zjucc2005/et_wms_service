@@ -1,0 +1,49 @@
+# Files in the app/locale directory are used for internationalization
+
+zh_cn:
+  activerecord:
+    errors:
+      # The default format to use in full error messages.
+      format: "%{attribute}%{message}"
+
+      # The values :model, :attribute and :value are always available for interpolation
+      # The value :count is available when applicable. Can be used for pluralization.
+      # Default errors translation
+      messages:
+        model_invalid: "验证失败: %{errors}"
+        inclusion: "未被包含在列表中"
+        exclusion: "被包含在列表中"
+        invalid: "验证不通过"
+        confirmation: "与%{attribute}不匹配"
+        accepted: "必须被接受"
+        empty: "不能为空"
+        blank: "不能为空"
+        present: "必须为空"
+        taken: "已被使用"
+        too_long:
+          one: "太长(最多1个字符)"
+          other: "太长(最多%{count}个字符)"
+        too_short:
+          one: "太短(最少1个字符)"
+          other: "太短(最少%{count}个字符)"
+        wrong_length:
+          one: "长度错误(必须为1个字符)"
+          other: "长度错误(必须为%{count}个字符)"
+        not_a_number: "必须为数字"
+        not_an_integer: "必须为整数"
+        greater_than: "必须大于%{count}"
+        greater_than_or_equal_to: "必须大于或等于%{count}"
+        equal_to: "必须等于%{count}"
+        less_than: "必须小于%{count}"
+        less_than_or_equal_to: "必须小于或等于%{count}"
+        other_than: "必须不等于%{count}"
+        odd: "必须为奇数"
+        even: "必须为偶数"
+
+      # Specified errors translation
+      models:
+        account:
+          attributes:
+            email:
+              taken: "已被注册"
+

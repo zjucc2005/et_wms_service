@@ -1,3 +1,7 @@
+# encoding: utf-8
+require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/string/inflections'
+
 module EtWmsService
   class App < Padrino::Application
     register ScssInitializer
@@ -9,8 +13,8 @@ module EtWmsService
     ##
     # Caching support.
     #
-    # register Padrino::Cache
-    # enable :caching
+    register Padrino::Cache
+    enable :caching
     #
     # You can customize caching store engines:
     #
@@ -23,7 +27,8 @@ module EtWmsService
     # set :cache, Padrino::Cache.new(:Redis, :backend => redis_instance)
     # set :cache, Padrino::Cache.new(:Mongo) # Uses default server at localhost
     # set :cache, Padrino::Cache.new(:Mongo, :backend => mongo_client_instance)
-    # set :cache, Padrino::Cache.new(:File, :dir => Padrino.root('tmp', app_name.to_s, 'cache')) # default choice
+    set :cache, Padrino::Cache.new(:File, :dir => Padrino.root('tmp', app_name.to_s, 'cache'), :expires => 60) # default choice
+    set :persist, Padrino::Cache.new(:File, :dir => Padrino.root('tmp', app_name.to_s, 'persist'))
     #
 
     ##
@@ -51,16 +56,29 @@ module EtWmsService
     #   end
     #
 
-    ##
-    # You can manage errors like:
-    #
-    #   error 404 do
-    #     render 'errors/404'
-    #   end
-    #
-    #   error 500 do
-    #     render 'errors/500'
-    #   end
-    #
+    # custom error management
+    error(403) { @title = 'Error 403'; render('errors/403', :layout => :error) }
+    error(404) { @title = 'Error 404'; render('errors/404', :layout => :error) }
+    error(500) { @title = 'Error 500'; render('errors/500', :layout => :error) }
+
+    # Language setting, default :en
+    before do
+      if params[:locale].present? && I18n.available_locales.include?(:"#{params[:locale]}")
+        I18n.locale = :"#{params[:locale]}"
+      else
+        I18n.locale = :zh_cn
+      end
+    end
+
+    # email settings
+    set :delivery_method, :smtp => {
+                          :address              => 'hwsmtp.qiye.163.com',
+                          :port                 => 25,
+                          :user_name            => 'info@quaie.com',
+                          :password             => '1qaz2WSX',
+                          :authentication       => 'plain',
+                          :enable_starttls_auto => true
+                        }
+
   end
 end

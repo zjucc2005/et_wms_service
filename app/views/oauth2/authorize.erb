@@ -1,0 +1,25 @@
+<% form_tag url(:oauth2, :authorize), :method => :post, :class => 'login form-horizontal' do %>
+    <%= hidden_field_tag :client_id, :value => params[:client_id] %>
+    <%= hidden_field_tag :response_type, :value => params[:response_type] %>
+    <%= hidden_field_tag :redirect_uri, :value => params[:redirect_uri] %>
+    <%= hidden_field_tag :state, :value => params[:state] %>
+    <%#= hidden_field_tag :approve, :value => true %>
+
+    <div class="login-body modal-body">
+        <div class="form-group">
+            <%= content_tag :label, 'Email', :class => 'col-lg-2 control-label', :for => :email %>
+            <div class="col-lg-10">
+                <%= email_field_tag :email, :value => params[:email], :autofocus => true, :required => true, :class => 'form-control' %>
+            </div>
+        </div>
+        <div class="form-group">
+            <%= content_tag :label, 'Password', :class => 'col-lg-2 control-label', :for => :password %>
+            <div class="col-lg-10">
+                <%= password_field_tag :password, :value => params[:password], :autofocus => true, :required => true, :class => 'form-control' %>
+            </div>
+        </div>
+    </div>
+    <div class="login-footer modal-footer">
+      <%= submit_tag 'Login & Get AccessToken', :class => 'btn btn-primary' %>
+    </div>
+<% end %>

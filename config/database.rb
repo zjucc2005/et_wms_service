@@ -14,21 +14,31 @@
 #   }
 #
 ActiveRecord::Base.configurations[:development] = {
-  :adapter => 'sqlite3',
-  :database => Padrino.root('db', 'et_wms_service_development.db')
-
+  :adapter   => 'postgresql',
+  :database  => 'et_wms_service_dev_db',
+  :username  => 'cai_chang',
+  :password  => '12345678',
+  :host      => 'localhost',
+  :port      => 5432
 }
 
 ActiveRecord::Base.configurations[:production] = {
-  :adapter => 'sqlite3',
-  :database => Padrino.root('db', 'et_wms_service_production.db')
+  :adapter   => 'postgresql',
+  :database  => 'et_wms_service_prod_db',
+  :username  => 'cai_chang',
+  :password  => '12345678',
+  :host      => 'localhost',
+  :port      => 5432
 
 }
 
 ActiveRecord::Base.configurations[:test] = {
-  :adapter => 'sqlite3',
-  :database => Padrino.root('db', 'et_wms_service_test.db')
-
+  :adapter   => 'postgresql',
+  :database  => 'et_wms_service_test_db',
+  :username  => 'cai_change',
+  :password  => '12345678',
+  :host      => 'localhost',
+  :port      => 5432
 }
 
 # Setup our logger
