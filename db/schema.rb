@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20201012061615) do
+ActiveRecord::Schema.define(version: 20201013023423) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -134,6 +134,46 @@ ActiveRecord::Schema.define(version: 20201012061615) do
     t.index ["account_id"], name: "index_clients_on_account_id"
   end
 
+  create_table "product_categories", force: :cascade do |t|
+    t.string "name"
+    t.string "foreign_name"
+    t.string "hscode"
+    t.bigint "parent_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "product_sales_properties", force: :cascade do |t|
+    t.bigint "product_id"
+    t.string "brand"
+    t.string "model"
+    t.decimal "price", precision: 10, scale: 2
+    t.string "currency"
+    t.decimal "weight", precision: 8, scale: 2
+    t.jsonb "clearance_attributes", default: {}
+    t.string "thumbnail"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["product_id"], name: "index_product_sales_properties_on_product_id"
+  end
+
+  create_table "products", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "product_category_id"
+    t.bigint "service_category_id"
+    t.string "channel"
+    t.string "sku_code"
+    t.string "barcode"
+    t.string "name"
+    t.string "foreign_name"
+    t.string "description"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_products_on_account_id"
+    t.index ["product_category_id"], name: "index_products_on_product_category_id"
+    t.index ["service_category_id"], name: "index_products_on_service_category_id"
+  end
+
   create_table "refresh_tokens", force: :cascade do |t|
     t.bigint "account_id"
     t.bigint "client_id"
@@ -153,6 +193,14 @@ ActiveRecord::Schema.define(version: 20201012061615) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["application_id"], name: "index_roles_on_application_id"
+  end
+
+  create_table "service_categories", force: :cascade do |t|
+    t.string "name"
+    t.string "foreign_name"
+    t.bigint "parent_id"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
 end

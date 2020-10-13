@@ -124,7 +124,7 @@ EtWmsService::App.controllers :"#{'api_v1.0_accounts'}", :map => 'api/v1.0/accou
 
       # 查询channel以及子channel下的用户
       filters['channels'] = {}
-      filters['channels']['id_in']= @request_account.accessible_channels.pluck(:id) unless @request_account.super_admin?
+      filters['channels']['id_in']= current_account.accessible_channels.pluck(:id) unless current_account.super_admin?
 
       query     = Account.query_filter(filters).distinct
       @count    = query.count
@@ -197,7 +197,7 @@ EtWmsService::App.controllers :"#{'api_v1.0_accounts'}", :map => 'api/v1.0/accou
       authenticate_access_token
 
       @account = Account.find_by(id: params[:id])
-      raise t('api.errors.cannot_delete', :model => 'Account', :id => params[:id])  if @account == @request_account
+      raise t('api.errors.cannot_delete', :model => 'Account', :id => params[:id])  if @account == current_account
       if @account
         @ret_data = @account.destroy ?
           { status: 'succ'} :

@@ -14,6 +14,8 @@ class Account < ActiveRecord::Base
     has_many :authorization_codes, :class_name => 'AuthorizationCode'
     # has_many :clients, :class_name => 'Client'
 
+    has_many :products, :class_name => 'Product'
+
     # Validations
     validates_presence_of   :email
     validates_length_of     :email, :within => 3..100

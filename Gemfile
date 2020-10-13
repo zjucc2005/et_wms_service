@@ -27,6 +27,8 @@ gem 'settingslogic'
 gem 'bcrypt'
 gem 'rack-oauth2', '~> 1.9.1'
 
+gem 'carrierwave', '1.2.2'
+gem 'roo', '~> 2.7.1'
 # Test requirements
 group :test do
   gem 'rspec'

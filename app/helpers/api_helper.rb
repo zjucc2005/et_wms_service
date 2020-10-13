@@ -23,10 +23,14 @@ module EtWmsService
       def authenticate_access_token
         access_token = AccessToken.valid.find_by_token(params['access_token'] || @request_params.try(:[], 'access_token'))
         if access_token && access_token.account
-          @request_account = access_token.account
+          @current_account = access_token.account
         else
           raise t('api.errors.invalid_access_token')
         end
+      end
+
+      def current_account
+        @current_account || raise(t('api.errors.no_current_account'))
       end
 
     end
