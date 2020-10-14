@@ -33,3 +33,18 @@ en:
       account:
         email_taken: "Email %{email} has been taken"
         invalid_email_or_confirmation: "Invalid email or confirmation token"
+
+      depot:
+        area_code_taken: "Area code %{area_code} has been taken"
+
+      shelf:
+        shelf_infos_exist: "Shelf infos already exist"
+
+      inventory:
+        not_found: "Inventory not found"
+
+      inventory_info:
+        not_found: "InventoryInfo not found"
+
+      shelf_info:
+        not_found: "ShelfNum not found or DepotCode not match"

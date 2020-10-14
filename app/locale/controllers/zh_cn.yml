@@ -33,3 +33,18 @@ zh_cn:
       account:
         email_taken: "邮箱%{email}已经被注册"
         invalid_email_or_confirmation: "帐号不存在或激活码错误"
+
+      depot:
+        area_code_taken: "Area code %{area_code} 已被使用"
+
+      shelf:
+        shelf_infos_exist: "Shelf infos 已存在"
+
+      inventory:
+        not_found: "未找到指定库存信息"
+
+      inventory_info:
+        not_found: "未找到指定库存批次信息"
+
+      shelf_info:
+        not_found: "未找到指定仓位号或仓库码不匹配"

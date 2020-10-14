@@ -33,6 +33,10 @@ module EtWmsService
         @current_account || raise(t('api.errors.no_current_account'))
       end
 
+      def current_channel
+        @current_account.channels[0].name rescue nil
+      end
+
     end
 
     helpers ApiHelper

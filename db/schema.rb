@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20201013023423) do
+ActiveRecord::Schema.define(version: 20201014015533) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -134,6 +134,154 @@ ActiveRecord::Schema.define(version: 20201013023423) do
     t.index ["account_id"], name: "index_clients_on_account_id"
   end
 
+  create_table "depot_areas", force: :cascade do |t|
+    t.bigint "depot_id"
+    t.string "area_code"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["depot_id"], name: "index_depot_areas_on_depot_id"
+  end
+
+  create_table "depots", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "channel"
+    t.string "name"
+    t.string "depot_code"
+    t.string "country"
+    t.string "province"
+    t.string "city"
+    t.string "district"
+    t.string "street"
+    t.string "street_number"
+    t.string "house_number"
+    t.string "postcode"
+    t.string "telephone"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_depots_on_account_id"
+  end
+
+  create_table "inventories", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "channel"
+    t.string "sku_code"
+    t.string "barcode"
+    t.integer "quantity", default: 0
+    t.integer "available_quantity", default: 0
+    t.integer "frozen_quantity", default: 0
+    t.string "name"
+    t.string "foreign_name"
+    t.string "abc_category"
+    t.integer "caution_threshold"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inventories_on_account_id"
+  end
+
+  create_table "inventory_infos", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "inventory_id"
+    t.string "batch_num"
+    t.string "status"
+    t.string "sku_code"
+    t.string "barcode"
+    t.integer "quantity", default: 0
+    t.integer "available_quantity", default: 0
+    t.integer "frozen_quantity", default: 0
+    t.string "shelf_num"
+    t.string "depot_code"
+    t.datetime "production_date"
+    t.datetime "expiry_date"
+    t.string "country_of_origin"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inventory_infos_on_account_id"
+    t.index ["inventory_id"], name: "index_inventory_infos_on_inventory_id"
+  end
+
+  create_table "inventory_operation_logs", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "channel"
+    t.bigint "inventory_id"
+    t.string "operation"
+    t.string "sku_code"
+    t.string "barcode"
+    t.string "batch_num"
+    t.string "shelf_num"
+    t.integer "quantity"
+    t.bigint "operator_id"
+    t.string "operator"
+    t.string "remark"
+    t.bigint "reference_id"
+    t.string "status"
+    t.string "refer_num"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inventory_operation_logs_on_account_id"
+    t.index ["inventory_id"], name: "index_inventory_operation_logs_on_inventory_id"
+  end
+
+  create_table "inventory_settings", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "field_key"
+    t.string "field_value"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inventory_settings_on_account_id"
+  end
+
+  create_table "inventory_task_check_infos", force: :cascade do |t|
+    t.bigint "inventory_task_id"
+    t.bigint "inventory_id"
+    t.string "status"
+    t.string "shelf_num"
+    t.integer "check_quantity"
+    t.bigint "operator_id"
+    t.string "operator"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inventory_id"], name: "index_inventory_task_check_infos_on_inventory_id"
+    t.index ["inventory_task_id"], name: "index_inventory_task_check_infos_on_inventory_task_id"
+  end
+
+  create_table "inventory_task_check_types", force: :cascade do |t|
+    t.bigint "inventory_task_id"
+    t.bigint "inventory_id"
+    t.string "check_type"
+    t.string "shelf_num"
+    t.index ["inventory_id"], name: "index_inventory_task_check_types_on_inventory_id"
+    t.index ["inventory_task_id"], name: "index_inventory_task_check_types_on_inventory_task_id"
+  end
+
+  create_table "inventory_task_transfer_infos", force: :cascade do |t|
+    t.bigint "inventory_task_id"
+    t.bigint "inventory_id"
+    t.string "status"
+    t.string "to_depot_code"
+    t.string "from_shelf_num"
+    t.string "to_shelf_num"
+    t.integer "transfer_quantity"
+    t.bigint "operator_id"
+    t.string "operator"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inventory_id"], name: "index_inventory_task_transfer_infos_on_inventory_id"
+    t.index ["inventory_task_id"], name: "index_inventory_task_transfer_infos_on_inventory_task_id"
+  end
+
+  create_table "inventory_tasks", force: :cascade do |t|
+    t.bigint "account_id"
+    t.string "channel"
+    t.string "task_num"
+    t.string "operation"
+    t.string "status"
+    t.jsonb "operator_ids", default: []
+    t.datetime "scheduled_time"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inventory_tasks_on_account_id"
+  end
+
   create_table "product_categories", force: :cascade do |t|
     t.string "name"
     t.string "foreign_name"
@@ -201,6 +349,32 @@ ActiveRecord::Schema.define(version: 20201013023423) do
     t.bigint "parent_id"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+  end
+
+  create_table "shelf_infos", force: :cascade do |t|
+    t.bigint "shelf_id"
+    t.string "shelf_num"
+    t.integer "column"
+    t.integer "row"
+    t.string "spec"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["shelf_id"], name: "index_shelf_infos_on_shelf_id"
+  end
+
+  create_table "shelves", force: :cascade do |t|
+    t.bigint "depot_id"
+    t.bigint "depot_area_id"
+    t.string "depot_code"
+    t.string "area_code"
+    t.integer "seq"
+    t.integer "column_number"
+    t.integer "row_number"
+    t.string "spec"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["depot_area_id"], name: "index_shelves_on_depot_area_id"
+    t.index ["depot_id"], name: "index_shelves_on_depot_id"
   end
 
 end

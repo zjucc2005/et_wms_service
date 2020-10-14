@@ -12,6 +12,10 @@ module EtWmsService
         end
       end
 
+      def validate_presence(resource)
+        raise t('api.errors.blank', :field => resource) if @request_params[resource].blank?
+      end
+
       def resource_params_permit(array=[])
         result = {}
         array.each do |field|

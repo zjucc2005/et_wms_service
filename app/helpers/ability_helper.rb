@@ -23,8 +23,30 @@ module EtWmsService
         (roles_enum & account.roles.pluck(:name)).first || account.roles.pluck(:name).first
       end
 
+      # 数据权限 - 查询
       def query_privilege
         prior_role(current_account) == 'super_admin' ? {} : { :channel_auth => current_account.channels[0].name }
+      end
+
+      # 数据权限 - 加载
+      def validate_load_privilege(ar_instance)
+        raise 'ar_instance must be an instance of ActiveRecord::Base' unless ActiveRecord::Base === ar_instance
+        raise t('api.errors.not_authorized') unless has_load_privilege(ar_instance)
+      end
+
+      def has_load_privilege(ar_instance)
+        prior_role(current_account) == 'super_admin' ? true : channel_auth(current_account.channels.pluck(:name), ar_instance.send(:channel))
+      end
+
+      def channel_auth(account_channels=[], data_channel='')
+        result = false
+        account_channels.each do |account_channel|
+          if data_channel.start_with?(account_channel)
+            result = true
+            break
+          end
+        end
+        result
       end
 
     end

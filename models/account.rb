@@ -15,6 +15,11 @@ class Account < ActiveRecord::Base
     # has_many :clients, :class_name => 'Client'
 
     has_many :products, :class_name => 'Product'
+    has_many :depots, :class_name => 'Depot'
+    has_many :inventories, :class_name => 'Inventory'
+    has_many :inventory_operation_logs, :class_name => 'InventoryOperationLog'
+    has_many :inventory_settings, :class_name => 'InventorySetting'
+    has_many :inventory_tasks, :class_name => 'InventoryTask'
 
     # Validations
     validates_presence_of   :email
