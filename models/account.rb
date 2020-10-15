@@ -21,6 +21,8 @@ class Account < ActiveRecord::Base
     has_many :inventory_settings, :class_name => 'InventorySetting'
     has_many :inventory_tasks, :class_name => 'InventoryTask'
 
+    has_many :inbound_skus, :class_name => 'InboundSku'
+
     # Validations
     validates_presence_of   :email
     validates_length_of     :email, :within => 3..100

@@ -81,4 +81,16 @@ EtWmsService::App.controllers :'api_v1.0_statistics', :map => 'api/v1.0/statisti
       }.to_json
     end
   end
+
+  # 2.4.1 入库预报数量统计
+  get :inbound_notifications_count, :map => 'inbound_notifications/count',:provides => [:json] do
+    api_rescue do
+      authenticate_access_token
+
+      query = InboundNotification.query_filter(query_privilege)
+      in_process_count = query.where(status: %w[in_process reopened]).count  # 处理中的入库预报数量
+      new_count = query.where(status: %w[new]).count                         # 未入库的入库预报数量
+      { status: 'succ', in_process_count: in_process_count, new_count: new_count }.to_json
+    end
+  end
 end

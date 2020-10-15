@@ -5,11 +5,11 @@ module EtWmsService
     module ModelHelper
 
       def validate_array(resource)
-        if @request_params[resource].blank?
-          raise t('api.errors.blank')
-        elsif !@request_params[resource].is_a?(Array)
-          raise t('api.errors.not_array')
-        end
+        raise t('api.errors.not_array', :field => resource) unless @request_params[resource].is_a?(Array)
+      end
+
+      def validate_hash(resource)
+        raise t('api.errors.not_hash', :field => resource) unless @request_params[resource].is_a?(Hash)
       end
 
       def validate_presence(resource)

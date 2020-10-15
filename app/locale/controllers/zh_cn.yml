@@ -48,3 +48,10 @@ zh_cn:
 
       shelf_info:
         not_found: "未找到指定仓位号或仓库码不匹配"
+
+      inbound_batch:
+        barcode_not_found: "入库批次中未找到条码为%{barcode}的商品"
+
+      inbound_notification:
+        inbound_type_error: "入库预报(id=%{id})类型错误"
+        cannot_operate: "入库预报(id=%{id})不可操作"

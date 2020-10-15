@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20201014015533) do
+ActiveRecord::Schema.define(version: 20201015021022) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -159,6 +159,104 @@ ActiveRecord::Schema.define(version: 20201014015533) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_depots_on_account_id"
+  end
+
+  create_table "inbound_batch_skus", force: :cascade do |t|
+    t.bigint "inbound_batch_id"
+    t.bigint "inbound_sku_id"
+    t.string "status"
+    t.integer "quantity"
+    t.jsonb "operate_infos"
+    t.datetime "production_date"
+    t.datetime "expiry_date"
+    t.string "country_of_origin"
+    t.string "abc_category"
+    t.string "problem_type"
+    t.string "problem_memo"
+    t.string "operate_memo"
+    t.jsonb "current_shelf", default: []
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inbound_batch_id"], name: "index_inbound_batch_skus_on_inbound_batch_id"
+    t.index ["inbound_sku_id"], name: "index_inbound_batch_skus_on_inbound_sku_id"
+  end
+
+  create_table "inbound_batches", force: :cascade do |t|
+    t.bigint "inbound_notification_id"
+    t.string "batch_num"
+    t.string "status"
+    t.jsonb "operator_ids", default: []
+    t.string "refer_num"
+    t.bigint "registrar_id"
+    t.string "registrar"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inbound_notification_id"], name: "index_inbound_batches_on_inbound_notification_id"
+  end
+
+  create_table "inbound_notifications", force: :cascade do |t|
+    t.string "inbound_num"
+    t.string "inbound_type"
+    t.string "status"
+    t.string "inbound_depot_code"
+    t.bigint "created_by"
+    t.string "channel"
+    t.string "data_source"
+    t.datetime "scheduled_time"
+    t.string "transport_method"
+    t.string "transport_memo"
+    t.integer "parcel_quantity"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "inbound_parcels", force: :cascade do |t|
+    t.bigint "inbound_notification_id"
+    t.string "parcel_num"
+    t.string "status"
+    t.string "space_num"
+    t.bigint "operator_id"
+    t.string "operator"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inbound_notification_id"], name: "index_inbound_parcels_on_inbound_notification_id"
+  end
+
+  create_table "inbound_received_infos", force: :cascade do |t|
+    t.bigint "inbound_notification_id"
+    t.bigint "created_by"
+    t.bigint "receiver_id"
+    t.string "receiver"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["inbound_notification_id"], name: "index_inbound_received_infos_on_inbound_notification_id"
+  end
+
+  create_table "inbound_received_skus", force: :cascade do |t|
+    t.bigint "inbound_received_info_id"
+    t.bigint "inbound_sku_id"
+    t.integer "quantity"
+    t.index ["inbound_received_info_id"], name: "index_inbound_received_skus_on_inbound_received_info_id"
+    t.index ["inbound_sku_id"], name: "index_inbound_received_skus_on_inbound_sku_id"
+  end
+
+  create_table "inbound_skus", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "inbound_notification_id"
+    t.string "status"
+    t.string "sku_code"
+    t.string "barcode"
+    t.integer "quantity"
+    t.datetime "production_date"
+    t.datetime "expiry_date"
+    t.string "country_of_origin"
+    t.string "abc_category"
+    t.string "name"
+    t.string "foreign_name"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_inbound_skus_on_account_id"
+    t.index ["inbound_notification_id"], name: "index_inbound_skus_on_inbound_notification_id"
   end
 
   create_table "inventories", force: :cascade do |t|

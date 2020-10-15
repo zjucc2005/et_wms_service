@@ -48,3 +48,10 @@ en:
 
       shelf_info:
         not_found: "ShelfNum not found or DepotCode not match"
+
+      inbound_batch:
+        barcode_not_found: "InboundBatchSku with barcode %{barcode} not found"
+
+      inbound_notification:
+        inbound_type_error: "InboundNotification with id %{id} inbound_type error"
+        cannot_operate: "InboundNotification with id %{id} cannot be operated"
