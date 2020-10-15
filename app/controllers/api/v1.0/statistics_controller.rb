@@ -93,4 +93,84 @@ EtWmsService::App.controllers :'api_v1.0_statistics', :map => 'api/v1.0/statisti
       { status: 'succ', in_process_count: in_process_count, new_count: new_count }.to_json
     end
   end
+
+  # 2.4.1 出库订单数量统计
+  get :outbound_orders_count, :map => 'outbound_orders/count', :provides => [:json] do
+    api_rescue do
+      authenticate_access_token
+
+      query = OutboundOrder.query_filter(query_privilege)
+      new_count = query.where(status: %w[new]).count                      # 未处理的订单数量
+      in_process_count = query.where(status: %w[allocated picked]).count  # 处理中的订单数量
+      wait_to_mp4_confirm_count = query.wait_to_mp4_confirm.count         # 待确认的订单数量
+      {
+        status: 'succ',
+        new_count: new_count,
+        in_process_count: in_process_count,
+        wait_to_mp4_confirm_count: wait_to_mp4_confirm_count,
+      }.to_json
+    end
+  end
+
+  # 2.4.2 出库订单趋势统计
+  get :outbound_orders_trend, :map => 'outbound_orders/trend', :provides => [:json] do
+    api_rescue do
+      authenticate_access_token
+
+      query = OutboundOrder.query_filter(query_privilege).where(status: 'printed')
+      days  = 30
+      begin_day = Time.now.beginning_of_day - days.days
+
+      # 趋势统计
+      trend = Array.new
+      days.times do |i|
+        trend << query.where('sent_at BETWEEN ? AND ?', begin_day + i.days, begin_day + (i+1).days).count
+      end
+
+      # 排名统计
+      ranking = Array.new
+      result = query.where('sent_at BETWEEN ? AND ?', begin_day, begin_day + days.days).
+        select('COUNT(*) AS count, created_by AS account').group(:created_by)
+      result = result.sort_by{ |obj| obj.count }
+      1.upto([5, result.length].min) do |i|
+        ranking << { rank: i, count: result[i-1].count, account: result[i-1].account }
+      end
+      if result.length > 5
+        ranking << { rank: 6, count: result[5, result.length].sum(&:count), account: 'rest' }
+      end
+
+      { status: 'succ', trend: trend, ranking: ranking }.to_json
+    end
+  end
+
+  # 2.4.3 出库包裹统计, 最近 12 周
+  get :outbound_orders_count_by_week, :map => 'outbound_orders/count_by_week', :provides => [:json] do
+    api_rescue do
+      authenticate_access_token
+
+      default_weeks = 8
+      weeks = @request_params['weeks'].to_i || default_weeks
+      weeks = default_weeks if weeks > 12 || weeks <= 0
+      query = OutboundOrder.where(status: %w[allocated picked printed sent])
+
+      beginning_of_week = Time.now.beginning_of_week
+
+      @data = []
+      weeks.times do |i|
+        begin_date = beginning_of_week - i.weeks
+        end_date   = begin_date + 1.week
+
+        _from_ = begin_date.strftime('%m.%d')
+        if i == 0
+          _to_ = nil
+        else
+          _to_ = (end_date - 1.day).strftime('%m.%d')
+        end
+        value = query.where('created_at BETWEEN ? AND ?', begin_date, end_date).count
+        @data << { from: _from_, to: _to_, value: value }
+      end
+
+      { status: 'succ', data: @data }.to_json
+    end
+  end
 end

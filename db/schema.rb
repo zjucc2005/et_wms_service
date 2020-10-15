@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20201015021022) do
+ActiveRecord::Schema.define(version: 20201015071144) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -380,6 +380,69 @@ ActiveRecord::Schema.define(version: 20201015021022) do
     t.index ["account_id"], name: "index_inventory_tasks_on_account_id"
   end
 
+  create_table "outbound_notifications", force: :cascade do |t|
+    t.string "outbound_num"
+    t.string "status"
+    t.bigint "created_by"
+    t.string "channel"
+    t.string "data_source"
+    t.bigint "allocator_id"
+    t.string "allocator"
+    t.datetime "scheduled_time"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+  end
+
+  create_table "outbound_orders", force: :cascade do |t|
+    t.bigint "outbound_notification_id"
+    t.bigint "created_by"
+    t.string "channel"
+    t.string "outbound_num"
+    t.string "batch_num"
+    t.integer "seq"
+    t.string "order_num"
+    t.string "depot_code"
+    t.string "status"
+    t.string "outbound_method"
+    t.bigint "operator_id"
+    t.string "operator"
+    t.string "shpmt_num"
+    t.string "shpmt_product"
+    t.jsonb "shpmt_addr_info"
+    t.string "parcel_num"
+    t.boolean "has_operate_infos", default: false
+    t.decimal "weight", precision: 10, scale: 2
+    t.decimal "length", precision: 10, scale: 2
+    t.decimal "width", precision: 10, scale: 2
+    t.decimal "height", precision: 10, scale: 2
+    t.decimal "price", precision: 10, scale: 2
+    t.string "currency"
+    t.boolean "mp4_confirmed", default: false
+    t.datetime "mp4_confirmed_at"
+    t.datetime "sent_at"
+    t.datetime "printed_at"
+    t.datetime "returned_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["outbound_notification_id"], name: "index_outbound_orders_on_outbound_notification_id"
+  end
+
+  create_table "outbound_skus", force: :cascade do |t|
+    t.bigint "account_id"
+    t.bigint "outbound_order_id"
+    t.string "depot_code"
+    t.string "sku_code"
+    t.string "barcode"
+    t.string "name"
+    t.string "foreign_name"
+    t.integer "quantity"
+    t.jsonb "operate_infos"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_outbound_skus_on_account_id"
+    t.index ["outbound_order_id"], name: "index_outbound_skus_on_outbound_order_id"
+  end
+
   create_table "product_categories", force: :cascade do |t|
     t.string "name"
     t.string "foreign_name"
@@ -429,6 +492,16 @@ ActiveRecord::Schema.define(version: 20201015021022) do
     t.datetime "updated_at", null: false
     t.index ["account_id"], name: "index_refresh_tokens_on_account_id"
     t.index ["client_id"], name: "index_refresh_tokens_on_client_id"
+  end
+
+  create_table "returned_orders", force: :cascade do |t|
+    t.bigint "outbound_order_id"
+    t.jsonb "returned_skus", default: []
+    t.bigint "operator_id"
+    t.string "operator"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["outbound_order_id"], name: "index_returned_orders_on_outbound_order_id"
   end
 
   create_table "roles", force: :cascade do |t|

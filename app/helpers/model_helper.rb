@@ -16,6 +16,10 @@ module EtWmsService
         raise t('api.errors.blank', :field => resource) if @request_params[resource].blank?
       end
 
+      def validate_string(resource)
+        raise t('api.errors.not_string', :field => resource) unless @request_params[resource].is_a?(String)
+      end
+
       def resource_params_permit(array=[])
         result = {}
         array.each do |field|

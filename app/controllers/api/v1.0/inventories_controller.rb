@@ -202,7 +202,7 @@ EtWmsService::App.controllers :'api_v1.0_inventories', :map => 'api/v1.0/invento
   #   end
   # end
   #
-  # # 2.7.7 库存信息查询(单个)
+  # # 2.7.7 库存信息查询(单个) 可删除
   # get :search, :provides => [:json] do
   #   api_rescue do
   #     authenticate_access_token
