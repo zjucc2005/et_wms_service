@@ -2,23 +2,23 @@
 class Inventory::Operation
   class << self
 
-    def register_operation(resource, operator=nil)
+    def register_operation(resource, operator)
       begin
         validate_register_resource(resource)
 
         logger.info "inventory register operation start! BatchNum[#{resource['batch_num']}]"
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['inbound_batch_skus'].each do |inbound_batch_sku|
             inbound_batch_sku['quantity'] = Integer(inbound_batch_sku['quantity'])
 
             # 查找现有的 Inventory 实例, 如果没有, 新建一个实例
-            inventory = Inventory.where(sku_code: inbound_batch_sku['sku_code'], barcode: inbound_batch_sku['barcode'], sku_owner: inbound_batch_sku['sku_owner']).first
+            inventory = Inventory.where(sku_code: inbound_batch_sku['sku_code'], barcode: inbound_batch_sku['barcode'], account_id: inbound_batch_sku['account_id']).first
             if inventory.nil?
               inventory = Inventory.create!(
                 sku_code:     inbound_batch_sku['sku_code'],
                 barcode:      inbound_batch_sku['barcode'],
-                sku_owner:    inbound_batch_sku['sku_owner'],
+                account_id:   inbound_batch_sku['account_id'],
                 channel:      inbound_batch_sku['channel'],
                 name:         inbound_batch_sku['name'],
                 foreign_name: inbound_batch_sku['foreign_name'],
@@ -51,10 +51,10 @@ class Inventory::Operation
               available_quantity: inbound_batch_sku['quantity'] + prev_available_quantity
             )
 
-            inventory_info.create_operation_log!(operation: 'register', quantity: inbound_batch_sku['quantity'], remark: 'SYS_CALL: register operation', operator: operator)
+            inventory_info.create_operation_log!(operation: 'register', quantity: inbound_batch_sku['quantity'], remark: 'SYS_CALL: register operation', operator_id: operator.id, operator: operator.email)
             logger.info "inventory register operation -- SkuCode[#{inbound_batch_sku['sku_code']}], Quantity[#{prev_quantity}]=>[#{inventory.quantity}]"
           end
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -189,14 +189,14 @@ class Inventory::Operation
       end
     end
 
-    def outbound_operation(resource, operator=nil)
+    def outbound_operation(resource, operator)
       begin
         validate_outbound_resource(resource)
 
         logger.info "inventory outbound operation start! BatchNum[#{resource['batch_num']}], OrderNum[#{resource['order_num']}]"
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['outbound_skus'].each do |outbound_sku|
-            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], sku_owner: outbound_sku['sku_owner']).first
+            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], account_id: outbound_sku['account_id']).first
             prev_quantity = inventory.quantity
             outbound_sku['operate_infos'].each do |operate_info|
               operate_info['quantity'] = Integer(operate_info['quantity'])
@@ -208,12 +208,12 @@ class Inventory::Operation
               # 下架操作顺序为 解冻(unfreeze) => 下架(unmount), 但只产生下架(unmount)日志
               inventory_info.unfreeze_inventory!(operate_info['quantity'])  # 解冻
               inventory_info.unmount_inventory!(operate_info['quantity'])   # 下架
-              inventory_info.create_operation_log!(operation: 'unmount', quantity: operate_info['quantity'], refer_num: resource['order_num'], remark: 'SYS_CALL: outbound operation', operator: operator)
+              inventory_info.create_operation_log!(operation: 'unmount', quantity: operate_info['quantity'], refer_num: resource['order_num'], remark: 'SYS_CALL: outbound operation', operator_id: operator.id, operator: operator.email)
 
               logger.info "inventory outbound operation success! SkuCode[#{outbound_sku['sku_code']}], Quantity[#{prev_quantity}]=>[#{inventory.quantity}]"
             end
           end
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -222,7 +222,7 @@ class Inventory::Operation
       end
     end
 
-    def get_picking_infos(resource, operator=nil)
+    def get_picking_infos(resource, operator)
       begin
         validate_get_picking_infos_resource(resource)
 
@@ -231,9 +231,9 @@ class Inventory::Operation
           outbound_skus: []
         }
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['outbound_skus'].each do |outbound_sku|
-            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], sku_owner: outbound_sku['sku_owner']).first
+            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], account_id: outbound_sku['account_id']).first
             raise "inventory with sku_code #{outbound_sku['sku_code']} not found" if inventory.nil?
             inventory_infos = inventory.inventory_infos.remain
             outbound_sku['quantity'] = Integer(outbound_sku['quantity'])
@@ -256,7 +256,7 @@ class Inventory::Operation
                 _freeze_quantity_ = inventory_info.available_quantity
               end
               inventory_info.freeze_inventory!(_freeze_quantity_)
-              inventory_info.create_operation_log!(operation: 'freeze', quantity: outbound_sku['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: get picking infos', operator: operator)
+              inventory_info.create_operation_log!(operation: 'freeze', quantity: outbound_sku['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: get picking infos', operator_id: operator.id, operator: operator.email)
 
               operate_infos << { shelf_num: inventory_info.shelf_num, quantity: _freeze_quantity_, batch_num: inventory_info.batch_num }.stringify_keys
               rest_of_freeze_quantity -= _freeze_quantity_
@@ -272,7 +272,7 @@ class Inventory::Operation
                 _freeze_quantity_ = inventory_info.available_quantity
               end
               inventory_info.freeze_inventory!(_freeze_quantity_)
-              inventory_info.create_operation_log!(operation: 'freeze', quantity: outbound_sku['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: get picking infos', operator: operator)
+              inventory_info.create_operation_log!(operation: 'freeze', quantity: outbound_sku['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: get picking infos', operator_id: operator.id, operator: operator.email)
 
               operate_infos << { shelf_num: inventory_info.shelf_num, quantity: _freeze_quantity_, batch_num: inventory_info.batch_num }.stringify_keys
               rest_of_freeze_quantity -= _freeze_quantity_
@@ -281,11 +281,11 @@ class Inventory::Operation
             result[:outbound_skus] << {
               sku_code: outbound_sku['sku_code'],
               barcode: outbound_sku['barcode'],
-              sku_owner: outbound_sku['sku_owner'],
+              account_id: outbound_sku['account_id'],
               operate_infos: operate_infos
             }
           end
-        end
+        # end
 
         result  # return
       rescue Exception => e
@@ -294,21 +294,21 @@ class Inventory::Operation
       end
     end
 
-    def remove_picking_infos(resource, operator=nil)
+    def remove_picking_infos(resource, operator)
       begin
         validate_remove_picking_infos_resource(resource)
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['outbound_skus'].each do |outbound_sku|
-            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], sku_owner: outbound_sku['sku_owner']).first
+            inventory = Inventory.where(sku_code: outbound_sku['sku_code'], barcode: outbound_sku['barcode'], account_id: outbound_sku['account_id']).first
             outbound_sku['operate_infos'].each do |operate_info|
               operate_info['quantity'] = Integer(operate_info['quantity'])
               inventory_info = inventory.inventory_infos.remain.where(shelf_num: operate_info['shelf_num'], batch_num: operate_info['batch_num']).first
               inventory_info.unfreeze_inventory!(operate_info['quantity'])  # 解冻
-              inventory_info.create_operation_log!(operation: 'unfreeze', quantity: operate_info['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: remove picking infos', operator: operator)
+              inventory_info.create_operation_log!(operation: 'unfreeze', quantity: operate_info['quantity'], refer_num: resource['batch_num'], remark: 'SYS_CALL: remove picking infos', operator_id: operator.id, operator: operator.email)
             end
           end
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -372,19 +372,6 @@ class Inventory::Operation
     end
 
     private
-    # def validate_inbound_resource(resource)
-    #   %w[batch_num sku_code barcode sku_owner quantity shelf_num depot_code].each do |field|
-    #     raise I18n.t('api.errors.blank', :field => field) if resource[field].blank?
-    #   end
-    #
-    #   quantity = Integer(resource['quantity']) rescue raise(I18n.t('api.errors.not_an_integer', :field => 'Quantity'))
-    #   raise I18n.t('api.errors.greater_than', :field => 'Quantity', :value => 0) if quantity <= 0
-    #   shelf_info = ShelfInfo.where(shelf_num: resource['shelf_num']).first
-    #   raise I18n.t('api.errors.shelf_info.not_found') if shelf_info.nil?
-    #   raise I18n.t('api.errors.shelf_info.not_found') if shelf_info.shelf.depot_code != resource['depot_code']
-    #   true  # return
-    # end
-
     def validate_register_resource(resource)
       %w[batch_num depot_code inbound_batch_skus].each do |field|
         raise I18n.t('api.errors.blank', :field => field) if resource[field].blank?
@@ -392,7 +379,7 @@ class Inventory::Operation
       if Array === resource['inbound_batch_skus']
         resource['inbound_batch_skus'].each_with_index do |inbound_batch_sku, index|
           raise I18n.t('api.errors.not_hash', :field => "inbound_batch_skus[#{index}]") unless Hash === inbound_batch_sku
-          %w[sku_code barcode name foreign_name sku_owner quantity].each do |field|
+          %w[sku_code barcode name foreign_name quantity].each do |field|
             raise I18n.t('api.errors.blank', :field => "inbound_batch_skus[#{index}].#{field}") if inbound_batch_sku[field].blank?
           end
 
@@ -442,7 +429,7 @@ class Inventory::Operation
       if Array === resource['outbound_skus']
         resource['outbound_skus'].each_with_index do |outbound_sku, index|
           raise I18n.t('api.errors.not_hash', :field => "outbound_skus[#{index}]") unless Hash === outbound_sku
-          %w[sku_code barcode sku_owner operate_infos].each do |field|
+          %w[sku_code barcode account_id operate_infos].each do |field|
             raise I18n.t('api.errors.blank', :field => "outbound_skus[#{index}].#{field}") if outbound_sku[field].blank?
           end
         end
@@ -459,7 +446,7 @@ class Inventory::Operation
       if Array === resource['outbound_skus']
         resource['outbound_skus'].each_with_index do |outbound_sku, index|
           raise I18n.t('api.errors.not_hash', :field => "outbound_skus[#{index}]") unless Hash === outbound_sku
-          %w[sku_code barcode sku_owner quantity].each do |field|
+          %w[sku_code barcode account_id quantity].each do |field|
             raise I18n.t('api.errors.blank', :field => "outbound_skus[#{index}].#{field}") if outbound_sku[field].blank?
           end
         end
@@ -476,7 +463,7 @@ class Inventory::Operation
       if Array === resource['outbound_skus']
         resource['outbound_skus'].each_with_index do |outbound_sku, index|
           raise I18n.t('api.errors.not_hash', :field => "outbound_skus[#{index}]") unless Hash === outbound_sku
-          %w[sku_code barcode sku_owner operate_infos].each do |field|
+          %w[sku_code barcode account_id operate_infos].each do |field|
             raise I18n.t('api.errors.blank', :field => "outbound_skus[#{index}].#{field}") if outbound_sku[field].blank?
           end
         end

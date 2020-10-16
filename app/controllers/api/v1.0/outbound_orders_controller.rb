@@ -90,7 +90,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       load_outbound_order
 
       unless @outbound_order.has_operate_infos?
-        # remote_get_picking_infos(@outbound_order) # 待处理
+        remote_get_picking_infos(@outbound_order) # 待验证
         reload_outbound_order
       end
       { status: 'succ', data: @outbound_order.outbound_skus.map(&:to_api) }.to_json
@@ -115,7 +115,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
 
       if @outbound_order.can_pick?
         case @outbound_order.outbound_method
-          # when 'picking' then remote_outbound_operation(@outbound_order)  # 待处理
+          when 'picking' then remote_outbound_operation(@outbound_order)  # 待验证
           when 'seeding' then @outbound_order.update!(status: 'picked')
           else raise "invalid outbound method, [#{@outbound_order.outbound_method}]"
         end
@@ -139,9 +139,9 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       if @outbound_order.can_cancel?
         ActiveRecord::Base.transaction do
           if @outbound_order.is_picked?
-            # remote_create_reshelf_notification_for_order(@outbound_order) # 待处理
+            @outbound_order.create_reshelf_notification  # 待验证
           elsif @outbound_order.has_operate_infos?
-            # remote_remove_picking_infos(@outbound_order) # 待处理
+            remote_remove_picking_infos(@outbound_order) # 待验证
           end
           @new_outbound_order = update_outbound_skus(@outbound_order, @request_params['outbound_skus'])
         end
@@ -160,9 +160,9 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
 
       if @outbound_order.can_cancel?
         if @outbound_order.is_picked?
-          # remote_create_reshelf_notification_for_order(@outbound_order) # 待处理
+          @outbound_order.create_reshelf_notification
         elsif @outbound_order.has_operate_infos?
-          # remote_remove_picking_infos(@outbound_order)  # 待处理
+          remote_remove_picking_infos(@outbound_order)
         end
         @outbound_order.cancel!
       else
@@ -224,9 +224,10 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       @outbound_orders.each do |outbound_order|
         if outbound_order.is_picked?
           # add to cached variable, and handle together
-          @picked_ids << outbound_order.id
+          outbound_order.create_reshelf_notification
+          outbound_order.cancel!
         elsif outbound_order.has_operate_infos?
-          # remote_remove_picking_infos(outbound_order) # 待处理
+          remote_remove_picking_infos(outbound_order) # 待处理
           outbound_order.cancel!
         else
           outbound_order.cancel!
@@ -234,20 +235,21 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       end
 
       # handle cached variable
-      if @picked_ids.any?
-        @picked_outbound_orders = OutboundOrder.where(id: @picked_ids)
-        @picked_outbound_skus   = OutboundSku.where(outbound_order_id: @picked_ids).
-          select('sku_code, barcode, sku_owner, SUM(quantity) AS quantity').
-          group(:sku_code, :barcode, :sku_owner)
-        refer_num     = "#{@picked_outbound_orders.first.batch_num}x#{@picked_outbound_orders.count}"
-        depot_code    = @picked_outbound_orders.first.depot_code
-        outbound_skus = @picked_outbound_skus.map(&:to_api_reshelf)
-
-        ActiveRecord::Base.transaction do
-          remote_create_reshelf_notification(refer_num, depot_code, outbound_skus)
-          @picked_outbound_orders.each{|outbound_order| outbound_order.cancel! }
-        end
-      end
+      # if @picked_ids.any?
+      #   @picked_outbound_orders = OutboundOrder.where(id: @picked_ids)
+      #   @picked_outbound_skus   = OutboundSku.where(outbound_order_id: @picked_ids).
+      #     select('sku_code, barcode, account_id, SUM(quantity) AS quantity').
+      #     group(:sku_code, :barcode, :account_id)
+      #   refer_num     = "#{@picked_outbound_orders.first.batch_num}x#{@picked_outbound_orders.count}"
+      #   depot_code    = @picked_outbound_orders.first.depot_code
+      #   outbound_skus = @picked_outbound_skus.map(&:to_api_reshelf)
+      #   channel       = @picked_outbound_orders[0].channel
+      #
+      #   ActiveRecord::Base.transaction do
+      #     remote_create_reshelf_notification(refer_num, depot_code, channel, outbound_skus)
+      #     @picked_outbound_orders.each{|outbound_order| outbound_order.cancel! }
+      #   end
+      # end
 
       { status: 'succ' }.to_json
     end
@@ -317,7 +319,9 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       outbound_skus = []
       @request_params['outbound_skus'].each do |ele|
         if ele['sku_code'].present?
-          outbound_skus << { sku_code: ele['sku_code'], barcode: ele['barcode'], quantity: ele['quantity'], sku_owner: ele['sku_owner'] }
+          account = Account.find_by(email: ele['sku_owner'].strip)
+          next if account.nil?
+          outbound_skus << { sku_code: ele['sku_code'], barcode: ele['barcode'], quantity: ele['quantity'], account_id: account.id, sku_owner: ele['sku_owner'] }
         end
       end
 
@@ -330,12 +334,10 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
           outbound_order.update!(status: 'returned', returned_at: Time.now)
           outbound_order.returned_orders.create!(
             returned_skus: outbound_skus,
-            operator:      current_account['email']
+            operator_id:   current_account.id,
+            operator:      current_account.email
           )
-          # remote_create_reshelf_notification(outbound_order.batch_num,
-          #                                    outbound_order.depot_code,
-          #                                    outbound_order.outbound_notification.channel,
-          #                                    outbound_skus)
+          outbound_order.create_reshelf_notification
         end
         { status: 'succ' }.to_json
       else

@@ -109,6 +109,16 @@ class InboundBatch < ActiveRecord::Base
   end
   # >> API
 
+  def inventory_register
+    params = {
+      batch_num: self.batch_num,
+      depot_code: self.inbound_notification.inbound_depot_code,
+      inbound_batch_skus: self.inbound_batch_skus.normal.map(&:to_api_register)
+    }
+    account = Account.find(inbound_notification.created_by)
+    Inventory::Operation.register_operation(params, account)
+  end
+
   # 是否只包含问题sku
   def only_problem_sku?
     inbound_batch_skus.normal.count == 0

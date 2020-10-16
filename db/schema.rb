@@ -224,7 +224,7 @@ ActiveRecord::Schema.define(version: 20201015071144) do
 
   create_table "inbound_received_infos", force: :cascade do |t|
     t.bigint "inbound_notification_id"
-    t.bigint "created_by"
+    t.bigint "data_source"
     t.bigint "receiver_id"
     t.string "receiver"
     t.datetime "created_at", null: false

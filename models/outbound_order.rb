@@ -163,6 +163,41 @@ class OutboundOrder < ActiveRecord::Base
     end
   end
 
+  # sku重新入库, 生成入库预报
+  def create_reshelf_notification
+    return false unless self.is_picked?  # 只能对已取货订单进行重新入库
+
+    ActiveRecord::Base.transaction do
+      # create InboundNotification
+      @inbound_notification = InboundNotification.reshelf_notifications.create!(
+        inbound_depot_code: self.depot_code,
+        scheduled_time: Time.now,
+        created_by: self.created_by,
+        channel: self.channel,
+        data_source: 'system'
+      )
+
+      self.outbound_skus.each_with_index do |outbound_sku, index|
+        @inbound_notification.inbound_skus.create!(
+          sku_code: outbound_sku.sku_code,
+          barcode: outbound_sku.barcode,
+          account_id: outbound_sku.account_id,
+          quantity: outbound_sku.quantity
+        )
+      end
+
+      # create InboundReceivedInfo && InboundBatch
+      @inbound_received_info = @inbound_notification.inbound_received_infos.create!(data_source: 'system')
+      @inbound_batch         = @inbound_notification.inbound_batches.create!(refer_num: self.batch_num)
+      @inbound_notification.inbound_skus.each do |inbound_sku|
+        inbound_sku.inbound_received_skus.create!(inbound_received_info_id: @inbound_received_info.id, quantity: inbound_sku.quantity)
+        inbound_sku.inbound_batch_skus.create!(inbound_batch_id: @inbound_batch.id, quantity: inbound_sku.quantity)
+      end
+
+      @inbound_batch.inventory_register
+    end
+  end
+
   private
   def setup
     self.status ||= 'new'

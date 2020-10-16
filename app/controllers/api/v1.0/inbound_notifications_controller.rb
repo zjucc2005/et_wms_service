@@ -102,7 +102,7 @@ EtWmsService::App.controllers :'api_v1.0_inbound_notifications', :map => 'api/v1
 
       ActiveRecord::Base.transaction do
         @inbound_received_info = @inbound_notification.inbound_received_infos.create!(
-          created_by: current_account.id, receiver_id: current_account.id, receiver: current_account.email)
+          receiver_id: current_account.id, receiver: current_account.email)
         @request_params['inbound_received_skus'].each_with_index do |resource, index|
           begin
             @inbound_received_info.create_inbound_received_skus!(resource)

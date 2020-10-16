@@ -95,6 +95,53 @@ module EtWmsService
         new_outbound_order  # return
       end
 
+      # ====== 替换原微服务之间API交流的业务逻辑, remote_** 系列 =====
+      def remote_get_picking_infos(outbound_order)
+        # 生成取货信息, sku冻结
+        logger.info "remote get picking infos start, [#{outbound_order.batch_num}]"
+        params = {
+          batch_num: outbound_order.batch_num,
+          outbound_skus: outbound_order.outbound_skus.map(&:to_api_simple)
+        }
+        ActiveRecord::Base.transaction do
+          result = Inventory::Operation.get_picking_infos(params, current_account)
+          result['outbound_skus'].each do |os|
+            outbound_sku = outbound_order.outbound_skus.where(sku_code: os['sku_code'], barcode: os['barcode'], account_Id: os['account_id']).first
+            outbound_sku.update!(operate_infos: os['operate_infos']) if outbound_sku
+          end
+          outbound_order.update!(has_operate_infos: true)
+        end
+      end
+
+      def remote_remove_picking_infos(outbound_order)
+        # 删除/取消取货信息, sku 解冻
+        logger.info "remote remove picking infos start, [#{outbound_order.batch_num}]"
+        params = {
+          batch_num: outbound_order.batch_num,
+          outbound_skus: outbound_order.outbound_skus.map(&:to_api_simple)
+        }
+        ActiveRecord::Base.transaction do
+          Inventory::Operation.remove_picking_infos(params, current_account)
+          outbound_order.outbound_skus.each do |outbound_sku|
+            outbound_sku.update!(operate_infos: nil)
+          end
+          outbound_order.update!(has_operate_infos: false)
+        end
+      end
+
+      def remote_outbound_operation(outbound_order)
+        logger.info "remote outbound operation start, [#{outbound_order.batch_num}]"
+        params = {
+          batch_num: outbound_order.batch_num,
+          order_num: outbound_order.order_num,
+          outbound_skus: outbound_order.outbound_skus.map(&:to_api_simple)
+        }
+        ActiveRecord::Base.transaction do
+          Inventory::Operation.outbound_operation(params, current_account)
+          outbound_order.update!(status: 'picked')
+        end
+      end
+
     end
     helpers OutboundHelper
   end
