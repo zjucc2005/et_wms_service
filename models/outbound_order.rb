@@ -164,9 +164,10 @@ class OutboundOrder < ActiveRecord::Base
   end
 
   # sku重新入库, 生成入库预报
-  def create_reshelf_notification
+  def create_reshelf_notification(operator=nil)
     return false unless self.is_picked?  # 只能对已取货订单进行重新入库
 
+    operator ||= Account.find(self.created_by)
     ActiveRecord::Base.transaction do
       # create InboundNotification
       @inbound_notification = InboundNotification.reshelf_notifications.create!(
@@ -194,7 +195,7 @@ class OutboundOrder < ActiveRecord::Base
         inbound_sku.inbound_batch_skus.create!(inbound_batch_id: @inbound_batch.id, quantity: inbound_sku.quantity)
       end
 
-      @inbound_batch.inventory_register
+      @inbound_batch.inventory_register(operator)
     end
   end
 

@@ -163,6 +163,22 @@ class InventoryTask < ActiveRecord::Base
   end
   # >> END
 
+  # 转移入库预报, remote
+  def create_transfer_notification(operator=nil)
+    operator ||= self.account
+    @inbound_notification = InboundNotification.transfer_notifications.create!(
+      inbound_num:        self.task_num,
+      created_by:         operator.id,
+      channel:            operator.channels[0].name,
+      data_source:        'system',
+      scheduled_time:     self.scheduled_time,
+      inbound_depot_code: transfer_infos.first.to_depot_code
+    )
+    transfer_infos.map(&:to_inbound_notification).each_with_index do |resource, index|
+      @inbound_notification.inbound_skus.create!(resource)
+    end
+  end
+
   private
   def setup
     self.task_num = gen_task_num

@@ -34,13 +34,11 @@ class InventoryTaskTransferInfo < ActiveRecord::Base
     }
   end
 
-  # >>> 估计没用, 待删除
   def to_inbound_notification
     {
       sku_code: inventory.sku_code,
       barcode: inventory.barcode,
       account_id: inventory.account_id,
-      sku_owner: inventory.account.email,
       quantity: transfer_quantity
     }
   end

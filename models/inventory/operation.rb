@@ -63,17 +63,17 @@ class Inventory::Operation
       end
     end
 
-    def register_decrease_operation(resource, operator=nil)
+    def register_decrease_operation(resource, operator)
       begin
         validate_register_decrease_resource(resource)
 
         logger.info "inventory register decrease operation start! BatchNum[#{resource['batch_num']}]"
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['quantity'] = Integer(resource['quantity'])
 
           # 查找对应的批次
-          inventory = Inventory.where(sku_code: resource['sku_code'], barcode: resource['barcode'], sku_owner: resource['sku_owner']).first
+          inventory = Inventory.where(sku_code: resource['sku_code'], barcode: resource['barcode'], account_id: resource['account_id']).first
           raise "inventory with sku_code [#{resource['sku_code']}] not found" if inventory.nil?
           inventory_info = inventory.inventory_infos.where(batch_num: resource['batch_num']).first
           raise "inventory_info with batch_num [#{resource['batch_num']}] not found" if inventory_info.nil?
@@ -91,9 +91,9 @@ class Inventory::Operation
           inventory_info.available_quantity -= resource['quantity']
           inventory_info.save!
 
-          inventory_info.create_operation_log!(operation: 'register_decrease', quantity: resource['quantity'], remark: resource['memo'], operator: operator)
+          inventory_info.create_operation_log!(operation: 'register_decrease', quantity: resource['quantity'], remark: resource['memo'], operator_id: operator.id, operator: operator.email)
           logger.info "inventory register decrease operation -- SkuCode[#{resource['sku_code']}], Quantity[#{prev_quantity}]=>[#{inventory.quantity}]"
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -102,13 +102,13 @@ class Inventory::Operation
       end
     end
 
-    def unregister_operation(resource, operator=nil)
+    def unregister_operation(resource, operator)
       begin
         validate_unregister_resource(resource)
 
         logger.info "inventory unregister operation start! BatchNum[#{resource['batch_num']}]"
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           # 已有其他(登记除外)记录则不能取消库存登记
           other_logs = InventoryOperationLog.where(batch_num: resource['batch_num']).where.not(operation: 'register')
           raise 'other operation logs existed' if other_logs.count > 0
@@ -131,7 +131,7 @@ class Inventory::Operation
             inventory_info.destroy
             logger.info "inventory unregister operation -- SkuCode[#{inventory_info.sku_code}], Quantity[#{prev_quantity}]=>[#{inventory.quantity}]"
           end
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -140,17 +140,17 @@ class Inventory::Operation
       end
     end
 
-    def mount_operation(resource, operator=nil)
+    def mount_operation(resource, operator)
       begin
         validate_mount_resource(resource)
 
         logger.info "inventory mount operation start! BatchNum[#{resource['batch_num']}]"
 
-        ActiveRecord::Base.transaction do
+        # ActiveRecord::Base.transaction do
           resource['quantity'] = Integer(resource['quantity'])
 
           # 给登记的库存分配货架号, 库存总量不变
-          inventory = Inventory.where(sku_code: resource['sku_code'], barcode: resource['barcode'], sku_owner: resource['sku_owner']).first
+          inventory = Inventory.where(sku_code: resource['sku_code'], barcode: resource['barcode'], account_id: resource['account_id']).first
           raise 'inventory not found' if inventory.nil?
 
           inventory_info = inventory.inventory_infos.where(batch_num: resource['batch_num'], shelf_num: nil, depot_code: resource['depot_code']).first
@@ -175,12 +175,12 @@ class Inventory::Operation
               available_quantity: prev_available_quantity - resource['quantity']
             )
 
-            mount_inventory_info.create_operation_log!(operation: 'mount', quantity: resource['quantity'], remark: 'SYS_CALL: mount operation', operator: operator)
+            mount_inventory_info.create_operation_log!(operation: 'mount', quantity: resource['quantity'], remark: 'SYS_CALL: mount operation', operator_id: operator.id, operator: operator.email)
             logger.info "inventory mount operation -- SkuCode[#{resource['sku_code']}], [#{resource['quantity']}]"
           else
             raise 'not enough quantity to mount'
           end
-        end
+        # end
 
         true  # return
       rescue Exception => e
@@ -393,7 +393,7 @@ class Inventory::Operation
     end
 
     def validate_register_decrease_resource(resource)
-      %w[batch_num sku_code barcode sku_owner quantity].each do |field|
+      %w[batch_num sku_code barcode account_id quantity].each do |field|
         raise I18n.t('api.errors.blank', :field => field) if resource[field].blank?
       end
 
@@ -410,7 +410,7 @@ class Inventory::Operation
     end
 
     def validate_mount_resource(resource)
-      %w[batch_num sku_code barcode sku_owner quantity shelf_num depot_code].each do |field|
+      %w[batch_num sku_code barcode account_id quantity shelf_num depot_code].each do |field|
         raise I18n.t('api.errors.blank', :field => field) if resource[field].blank?
       end
 

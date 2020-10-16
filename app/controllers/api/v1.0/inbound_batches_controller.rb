@@ -51,9 +51,9 @@ EtWmsService::App.controllers :'api_v1.0_inbound_batches', :map => 'api/v1.0/inb
       load_inbound_batch
 
       if @inbound_batch.can_delete?
-          # remote_inventory_unregister(@inbound_batch)  # >> CALL API # 待处理
-          @inbound_batch.destroy!
-          { status: 'succ' }.to_json
+        @inbound_batch.inventory_unregister(current_account)  # 待验证
+        @inbound_batch.destroy!
+        { status: 'succ' }.to_json
       else
         raise t('api.errors.cannot_delete', :model => 'InboundBatch', :id => params[:id])
       end
@@ -96,14 +96,15 @@ EtWmsService::App.controllers :'api_v1.0_inbound_batches', :map => 'api/v1.0/inb
           batch_num:  @inbound_batch.batch_num,
           sku_code:   inbound_batch_sku.inbound_sku.sku_code,
           barcode:    inbound_batch_sku.inbound_sku.barcode,
-          # sku_owner:  inbound_batch_sku.inbound_sku.sku_owner,
+          account_id: inbound_batch_sku.inbound_sku.account_id,
           quantity:   @quantity,
           shelf_num:  @shelf_num,
           depot_code: @inbound_batch.inbound_notification.inbound_depot_code
-        }
+        }.stringify_keys
 
         @inbound_batch.update_status!
         # remote_inventory_mount(inventory_mount_params)  # >> CALL API  # 待处理
+        Inventory::Operation.mount_operation(inventory_mount_params, current_account)  # 待验证
       end
 
       { status: 'succ' }.to_json
@@ -150,11 +151,12 @@ EtWmsService::App.controllers :'api_v1.0_inbound_batches', :map => 'api/v1.0/inb
           batch_num: @inbound_batch.batch_num,
           sku_code:  inbound_batch_sku.inbound_sku.sku_code,
           barcode:   inbound_batch_sku.inbound_sku.barcode,
-          sku_owner: inbound_batch_sku.inbound_sku.sku_owner,
+          account_id: inbound_batch_sku.inbound_sku.account_id,
           quantity:  @quantity,
           memo:      @problem_type
         }
         # remote_inventory_register_decrease(inventory_register_decrease_params)  # >> CALL API # 待处理
+        Inventory::Operation.register_decrease_operation(inventory_register_decrease_params, current_account)  # 待验证
       end
 
       { status: 'succ' }.to_json

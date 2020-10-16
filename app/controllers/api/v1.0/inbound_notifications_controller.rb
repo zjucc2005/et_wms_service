@@ -142,7 +142,7 @@ EtWmsService::App.controllers :'api_v1.0_inbound_notifications', :map => 'api/v1
             raise "index[#{index}], error: #{e.message}"
           end
         end
-        # remote_inventory_register(@inbound_batch)  # >> CALL API 待处理
+        @inbound_batch.inventory_register  # 待验证
       end
 
       { status: 'succ', data: @inbound_batch.to_api }.to_json
@@ -195,8 +195,8 @@ EtWmsService::App.controllers :'api_v1.0_inbound_notifications', :map => 'api/v1
 
       if @inbound_notification.can_delete?
         ActiveRecord::Base.transaction do
+          @inbound_notification.cancel_transfer_task if @inbound_notification.inbound_type == 'transfer'  # 待验证
           @inbound_notification.destroy
-          # remote_cancel_transfer_task(@inbound_notification)  # 待处理
         end
 
         { status: 'succ' }.to_json
@@ -280,7 +280,7 @@ EtWmsService::App.controllers :'api_v1.0_inbound_notifications', :map => 'api/v1
         ActiveRecord::Base.transaction do
           @inbound_notification.update!(status: 'closed')
           if @inbound_notification.inbound_type == 'transfer'
-            # remote_finish_transfer_task(@inbound_notification)  # 待处理
+            @inbound_notification.finish_transfer_task  # 待验证
             @inbound_notification.update!(status: 'finished')  # transfer 类型直接 closed => finished
           end
         end

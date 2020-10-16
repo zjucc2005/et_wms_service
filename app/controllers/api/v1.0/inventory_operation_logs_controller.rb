@@ -71,6 +71,7 @@ EtWmsService::App.controllers :'api_v1.0_inventory_operation_logs', :map => 'api
           mount_inventory_info.destroy!
 
           # remote_inbound_batch_mount_rollback(log)  # >> CALL API - INBOUND 入库服务的操作, 待更新
+          log.inbound_batch_mount_rollback  #待验证
         end
         { status: 'succ' }.to_json
       else

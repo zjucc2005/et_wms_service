@@ -77,6 +77,24 @@ class InventoryOperationLog < ActiveRecord::Base
     inventory.inventory_infos.where(batch_num: batch_num, shelf_num: shelf_num).first
   end
 
+  # 上架操作回退, remote
+  def inbound_batch_mount_rollback
+    inbound_batch = InboundBatch.where(batch_num: self.batch_num).first
+    raise 'inbound batch not found' if inbound_batch.nil?
+    inbound_sku = inbound_batch.inbound_notification.inbound_skus.where(sku_code: sku_code, barcode: barcode, account_id: account_id).first
+    raise 'inbound sku not found' if inbound_sku.nil?
+    inbound_batch_sku = inbound_batch.inbound_batch_skus.where(inbound_sku_id: inbound_sku.id).first
+    rollback_operate_infos = inbound_batch_sku.operate_infos.select do |info|
+      info['operator_id'] == self.operator_id && info['quantity'] == self.quantity && info['shelf_num'] == self.shelf_num
+    end
+    if rollback_operate_infos.present?
+      inbound_batch_sku.operate_infos -= rollback_operate_infos
+      inbound_batch_sku.save!
+      inbound_batch_sku.update_status!
+      inbound_batch.update_status!
+    end
+  end
+
   private
   def setup
     self.operator ||= 'system'

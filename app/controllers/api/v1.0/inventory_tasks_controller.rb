@@ -52,6 +52,7 @@ EtWmsService::App.controllers :'api_v1.0_inventory_tasks', :map => 'api/v1.0/inv
         end
 
         # remote_create_transfer_notification(@inventory_task) unless test_mode  # spec, 待处理
+        @inventory_task.create_transfer_notification  # 待验证
       end
 
       { status: 'succ', data: @inventory_task.to_api }.to_json

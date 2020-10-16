@@ -109,14 +109,20 @@ class InboundBatch < ActiveRecord::Base
   end
   # >> API
 
-  def inventory_register
+  def inventory_register(operator=nil)
     params = {
       batch_num: self.batch_num,
       depot_code: self.inbound_notification.inbound_depot_code,
       inbound_batch_skus: self.inbound_batch_skus.normal.map(&:to_api_register)
     }
-    account = Account.find(inbound_notification.created_by)
-    Inventory::Operation.register_operation(params, account)
+    operator ||= Account.find(inbound_notification.created_by)
+    Inventory::Operation.register_operation(params, operator)
+  end
+
+  def inventory_unregister(operator=nil)
+    params = { batch_num: self.batch_num }
+    operator ||= Account.find(inbound_notification.created_by)
+    Inventory::Operation.unregister_operation(params, operator)
   end
 
   # 是否只包含问题sku

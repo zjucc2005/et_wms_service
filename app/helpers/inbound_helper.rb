@@ -85,6 +85,15 @@ module EtWmsService
       #   end
       # end
 
+      # 库存批次上架
+      def remote_inventory_mount(resource)
+        resource.symbolize_keys!
+        logger.info "remote inventory mount start, [#{resource[:batch_num]}]"
+        Inventory::Operation.mount_operation(resource, current_account)
+
+
+      end
+
     end
     helpers InboundHelper
   end

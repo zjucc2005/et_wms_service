@@ -139,7 +139,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       if @outbound_order.can_cancel?
         ActiveRecord::Base.transaction do
           if @outbound_order.is_picked?
-            @outbound_order.create_reshelf_notification  # 待验证
+            @outbound_order.create_reshelf_notification(current_account)  # 待验证
           elsif @outbound_order.has_operate_infos?
             remote_remove_picking_infos(@outbound_order) # 待验证
           end
@@ -160,7 +160,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
 
       if @outbound_order.can_cancel?
         if @outbound_order.is_picked?
-          @outbound_order.create_reshelf_notification
+          @outbound_order.create_reshelf_notification(current_account)
         elsif @outbound_order.has_operate_infos?
           remote_remove_picking_infos(@outbound_order)
         end
@@ -224,7 +224,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
       @outbound_orders.each do |outbound_order|
         if outbound_order.is_picked?
           # add to cached variable, and handle together
-          outbound_order.create_reshelf_notification
+          outbound_order.create_reshelf_notification(current_account)
           outbound_order.cancel!
         elsif outbound_order.has_operate_infos?
           remote_remove_picking_infos(outbound_order) # 待处理
@@ -337,7 +337,7 @@ EtWmsService::App.controllers :'api_v1.0_outbound_orders', :map => 'api/v1.0/out
             operator_id:   current_account.id,
             operator:      current_account.email
           )
-          outbound_order.create_reshelf_notification
+          outbound_order.create_reshelf_notification(current_account)
         end
         { status: 'succ' }.to_json
       else

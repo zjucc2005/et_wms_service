@@ -89,6 +89,26 @@ class InboundNotification < ActiveRecord::Base
     inbound_skus.each{ |inbound_sku| inbound_sku.update!(status: 'finished') }
   end
 
+  # 转移任务取消 remote
+  def cancel_transfer_task
+    logger.info "remote cancel transfer task start, [#{inbound_num}]"
+    @inventory_task = InventoryTask.transfer_tasks.where(task_num: inbound_num).first
+    raise "task_num #{inbound_num} not found" if @inventory_task.nil?
+    raise t('api.errors.cannot_update', :model => 'InventoryTask', :id => @inventory_task.id) unless @inventory_task.can_update?
+    @inventory_task.cancel_inventory_task
+  end
+
+  # 转移任务完成 remote
+  def finish_transfer_task
+    logger.info "remote finish transfer task start, [#{inbound_num}]"
+    @inventory_task = InventoryTask.transfer_tasks.where(task_num: inbound_num).first
+    raise "task_num #{inbound_num} not found" if @inventory_task.nil?
+    raise t('api.errors.cannot_update', :model => 'InventoryTask', :id => @inventory_task.id) unless @inventory_task.can_update?
+    @inventory_task.execute_inventory_task
+  end
+
+
+
   private
   def setup
     self.inbound_num ||= gen_inbound_num
